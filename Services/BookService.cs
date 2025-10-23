@@ -1,4 +1,5 @@
 ﻿using quest5.Models;
+using quest5.Resources;
 
 namespace quest5.Services
 {
@@ -20,7 +21,10 @@ namespace quest5.Services
         public Book Create(Book book)
         {
             if (!_authors.Exists(book.AuthorId))
-                throw new ArgumentException($"Author with Id={book.AuthorId} not found.");
+                throw new ArgumentException(ResourceHelper.Get("AuthorNotFound", book.AuthorId));
+
+            if (string.IsNullOrWhiteSpace(book.Title))
+                throw new ArgumentException(ResourceHelper.Get("InvalidBookTitle"));
 
             book.Id = _data.GetNextBookId();
             _data.Books.Add(book);
@@ -32,7 +36,7 @@ namespace quest5.Services
             var existing = _data.Books.FirstOrDefault(b => b.Id == id);
             if (existing == null) return false;
             if (!_authors.Exists(book.AuthorId))
-                throw new ArgumentException($"Author with Id={book.AuthorId} not found.");
+                throw new ArgumentException(ResourceHelper.Get("AuthorNotFound", book.AuthorId));
 
             existing.Title = book.Title;
             existing.PublishedYear = book.PublishedYear;

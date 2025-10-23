@@ -1,4 +1,6 @@
 using quest5.Services;
+using quest5.Errors;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -10,6 +12,8 @@ builder.Services.AddScoped<IAuthorService, AuthorService>();
 builder.Services.AddScoped<IBookService, BookService>();
 
 var app = builder.Build();
+
+app.UseGlobalErrorHandler();
 
 if (app.Environment.IsDevelopment())
 {

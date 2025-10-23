@@ -29,29 +29,15 @@ namespace quest5.Controllers
         [HttpPost]
         public ActionResult<Book> Create([FromBody] Book book)
         {
-            try
-            {
                 var created = _books.Create(book);
                 return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
         }
 
         [HttpPut("{id:int}")]
         public IActionResult Update(int id, [FromBody] Book book)
         {
-            try
-            {
                 if (!_books.Update(id, book)) return NotFound();
                 return NoContent();
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
         }
 
         [HttpDelete("{id:int}")]
