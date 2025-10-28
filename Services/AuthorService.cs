@@ -1,69 +1,57 @@
-﻿using Microsoft.EntityFrameworkCore;
-using quest5.Models;
-using quest5.Resources;
-using quest5.DataFolder;
+﻿using quest5.Models;
+using quest5.Repositories;
+using quest5.Services;
 
 namespace quest5.Services
 {
     public class AuthorService : IAuthorService
     {
-        private readonly InMemoryData _data;
+        private readonly IAuthorRepository _books;
 
-        public AuthorService(InMemoryData data)
+        public AuthorService(IAuthorRepository books)
         {
-            _data = data;
+            _books = books;
         }
 
-        public IEnumerable<Author> GetAll()
-        {
-            return _data.Authors.Include(a => a.Books).AsNoTracking().ToList();
-        }
+        public async Task<IEnumerable<Author>> GetAllAsync() =>
+            await _books.GetAllAsync();
 
-        public Author GetById(int id)
+        public async Task<Author> GetByIdAsync(int id)
         {
-            var author = _data.Authors.Include(a => a.Books)
-                .FirstOrDefault(a => a.Id == id);
-
+            var author = await _books.GetByIdAsync(id);
             if (author == null)
-                throw new KeyNotFoundException(ResourceHelper.Get("AuthorNotFound", id));
+                throw new KeyNotFoundException($"Author with ID {id} not found.");
 
             return author;
         }
 
-        public Author Create(Author author)
+        public async Task<Author> CreateAsync(Author author)
         {
             if (string.IsNullOrWhiteSpace(author.Name))
-                throw new ArgumentException(ResourceHelper.Get("AuthorRequired"));
+                throw new ArgumentException("Author name cannot be empty.");
 
-            _data.Authors.Add(author);
-            _data.SaveChanges();
-
+            await _books.AddAsync(author);
             return author;
         }
 
-        public bool Update(int id, Author author)
+        public async Task UpdateAsync(int id, Author author)
         {
-            var existing = _data.Authors.Find(id);
+            var existing = await _books.GetByIdAsync(id);
             if (existing == null)
-                throw new KeyNotFoundException(ResourceHelper.Get("AuthorNotFound", id));
+                throw new KeyNotFoundException($"Author with ID {id} not found.");
 
             existing.Name = author.Name;
             existing.DateOfBirth = author.DateOfBirth;
-            _data.SaveChanges();
-            return true;
+            await _books.UpdateAsync(existing);
         }
 
-        public bool Delete(int id)
+        public async Task DeleteAsync(int id)
         {
-            var author = _data.Authors.Include(a => a.Books).FirstOrDefault(a => a.Id == id);
+            var author = await _books.GetByIdAsync(id);
             if (author == null)
-                throw new KeyNotFoundException(ResourceHelper.Get("AuthorNotFound", id));
+                throw new KeyNotFoundException($"Author with ID {id} not found.");
 
-            _data.Authors.Remove(author);
-            _data.SaveChanges();
-            return true;
+            await _books.DeleteAsync(author);
         }
-
-        public bool Exists(int id) => _data.Authors.Any(a => a.Id == id);
     }
 }

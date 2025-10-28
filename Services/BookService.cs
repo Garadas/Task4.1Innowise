@@ -1,96 +1,59 @@
-﻿using quest5.DataFolder;
-using quest5.Models;
-using quest5.Resources;
-using Microsoft.EntityFrameworkCore;
-
+﻿using quest5.Models;
+using quest5.Services;
+using quest5.Repositories;
 
 namespace quest5.Services
 {
     public class BookService : IBookService
     {
-        private readonly InMemoryData _context;
+        private readonly IBookRepository _books;
 
-        public BookService(InMemoryData context)
+        public BookService(IBookRepository books)
         {
-            _context = context;
+            _books = books;
         }
 
-        public IEnumerable<Book> GetAll()
-        {
-            return _context.Books.AsNoTracking().ToList();
-        }
+        public async Task<IEnumerable<Book>> GetAllAsync() =>
+            await _books.GetAllAsync();
 
-        public Book GetById(int id)
+        public async Task<Book> GetByIdAsync(int id)
         {
-            var book = _context.Books.FirstOrDefault(b => b.Id == id);
+            var book = await _books.GetByIdAsync(id);
             if (book == null)
-                throw new KeyNotFoundException(ResourceHelper.Get("BookNotFound", id));
+                throw new KeyNotFoundException($"Book with ID {id} not found.");
 
             return book;
         }
 
-        public Book Create(Book book)
+        public async Task<Book> CreateAsync(Book book)
         {
             if (string.IsNullOrWhiteSpace(book.Title))
-                throw new ArgumentException(ResourceHelper.Get("InvalidBookTitle"));
+                throw new ArgumentException("Book title cannot be empty.");
 
-            if (!_context.Authors.Any(a => a.Id == book.AuthorId))
-                throw new ArgumentException(ResourceHelper.Get("AuthorNotFound", book.AuthorId));
-
-            _context.Books.Add(book);
-            _context.SaveChanges();
-
+            await _books.AddAsync(book);
             return book;
         }
 
-        public void Update(int id, Book book)
+        public async Task UpdateAsync(int id, Book book)
         {
-            var existing = _context.Books.Find(id);
+            var existing = await _books.GetByIdAsync(id);
             if (existing == null)
-                throw new KeyNotFoundException(ResourceHelper.Get("BookNotFound", id));
+                throw new KeyNotFoundException($"Book with ID {id} not found.");
 
             existing.Title = book.Title;
             existing.PublishedYear = book.PublishedYear;
             existing.AuthorId = book.AuthorId;
 
-            _context.SaveChanges();
+            await _books.UpdateAsync(existing);
         }
 
-        public void Delete(int id)
+        public async Task DeleteAsync(int id)
         {
-            var book = _context.Books.Find(id);
-            if (book == null)
-                throw new KeyNotFoundException(ResourceHelper.Get("BookNotFound", id));
+            var existing = await _books.GetByIdAsync(id);
+            if (existing == null)
+                throw new KeyNotFoundException($"Book with ID {id} not found.");
 
-            _context.Books.Remove(book);
-            _context.SaveChanges();
-        }
-
-        public IEnumerable<object> GetAuthorsWithBookCount()
-        {
-            return _context.Authors
-                .Include(a => a.Books)
-                .Select(a => new
-                {
-                    a.Name,
-                    BooksCount = a.Books.Count
-                })
-                .ToList();
-        }
-
-        public IEnumerable<Book> GetBooksAfterYear(int year)
-        {
-            return _context.Books
-                .Where(b => b.PublishedYear != null && b.PublishedYear > year)
-                .ToList();
-        }
-
-        public IEnumerable<Author> FindAuthorsByName(string name)
-        {
-            return _context.Authors
-                .Include(a => a.Books)
-                .Where(a => a.Name.Contains(name))
-                .ToList();
+            await _books.DeleteAsync(existing);
         }
     }
 }

@@ -1,27 +1,22 @@
-﻿using quest5.Models;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using quest5.Models;
 
 namespace quest5.DataFolder
-{  
+{
     public class InMemoryData : DbContext
     {
-        public InMemoryData(DbContextOptions<InMemoryData> options)
-            : base(options)
-        {
-        }
+        public InMemoryData(DbContextOptions<InMemoryData> options) : base(options) { }
 
-    public DbSet<Author> Authors { get; set; }
-    public DbSet<Book> Books { get; set; }
+        public DbSet<Author> Authors => Set<Author>();
+        public DbSet<Book> Books => Set<Book>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
-
             modelBuilder.Entity<Author>()
                 .HasMany(a => a.Books)
-                .WithOne()
-                .HasForeignKey(b => b.AuthorId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .WithOne(b => b.Author)
+                .HasForeignKey(b => b.AuthorId);
+
 
             modelBuilder.Entity<Author>().HasData(
                 new Author { Id = 1, Name = "Agata Kristy", DateOfBirth = new DateTime(1890, 9, 15) },
@@ -29,10 +24,11 @@ namespace quest5.DataFolder
             );
 
             modelBuilder.Entity<Book>().HasData(
-            new Book { Id = 1, Title = "Secret Adversary", PublishedYear = 1922, AuthorId = 1 },
-            new Book { Id = 2, Title = "Postern of Fate", PublishedYear = 1973, AuthorId = 1 },
-            new Book { Id = 3, Title = "Crime and Punishment", PublishedYear = 1866, AuthorId = 2 }
+                new Book { Id = 1, Title = "Secret Adversary", PublishedYear = 1922, AuthorId = 1 },
+                new Book { Id = 2, Title = "Postern of Fate", PublishedYear = 1973, AuthorId = 1 },
+                new Book { Id = 3, Title = "Crime and Punishment", PublishedYear = 1866, AuthorId = 2 }
             );
-        }
+
+      }
     }
 }

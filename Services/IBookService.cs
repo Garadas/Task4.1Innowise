@@ -4,14 +4,10 @@ namespace quest5.Services
 {
     public interface IBookService
     {
-        IEnumerable<Book> GetAll();
-        Book? GetById(int id);
-        Book Create(Book book);
-        void Update(int id, Book book);
-        void Delete(int id);
-
-        IEnumerable<object> GetAuthorsWithBookCount();
-        IEnumerable<Book> GetBooksAfterYear(int year);
-        IEnumerable<Author> FindAuthorsByName(string name);
+        Task<IEnumerable<Book>> GetAllAsync();
+        Task<Book> GetByIdAsync(int id);
+        Task<Book> CreateAsync(Book book);
+        Task UpdateAsync(int id, Book book);
+        Task DeleteAsync(int id);
     }
 }

@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using quest5.Models;
 using quest5.Services;
 
@@ -9,42 +8,39 @@ namespace quest5.Controllers
     [Route("api/[controller]")]
     public class AuthorsController : ControllerBase
     {
-        private readonly IAuthorService _authors;
+        private readonly IAuthorService _service;
 
-        public AuthorsController(IAuthorService authors)
+        public AuthorsController(IAuthorService service)
         {
-            _authors = authors;
+            _service = service;
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<Author>> GetAll() => Ok(_authors.GetAll());
+        public async Task<IActionResult> GetAll() =>
+            Ok(await _service.GetAllAsync());
 
         [HttpGet("{id:int}")]
-        public ActionResult<Author> Get(int id)
-        {
-            var author = _authors.GetById(id);
-            if (author == null) return NotFound();
-            return Ok(author);
-        }
+        public async Task<IActionResult> GetById(int id) =>
+            Ok(await _service.GetByIdAsync(id));
 
         [HttpPost]
-        public ActionResult<Author> Create([FromBody] Author author)
+        public async Task<IActionResult> Create([FromBody] Author author)
         {
-            var created = _authors.Create(author);
-            return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+            var created = await _service.CreateAsync(author);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
         [HttpPut("{id:int}")]
-        public IActionResult Update(int id, [FromBody] Author author)
+        public async Task<IActionResult> Update(int id, [FromBody] Author author)
         {
-            if (!_authors.Update(id, author)) return NotFound();
+            await _service.UpdateAsync(id, author);
             return NoContent();
         }
 
         [HttpDelete("{id:int}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            if (!_authors.Delete(id)) return NotFound();
+            await _service.DeleteAsync(id);
             return NoContent();
         }
     }
