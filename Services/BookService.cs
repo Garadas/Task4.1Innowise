@@ -1,56 +1,96 @@
-﻿using quest5.Models;
+﻿using quest5.DataFolder;
+using quest5.Models;
 using quest5.Resources;
+using Microsoft.EntityFrameworkCore;
+
 
 namespace quest5.Services
 {
     public class BookService : IBookService
     {
-        private readonly InMemoryData _data;
-        private readonly IAuthorService _authors;
+        private readonly InMemoryData _context;
 
-        public BookService(InMemoryData data, IAuthorService authors)
+        public BookService(InMemoryData context)
         {
-            _data = data;
-            _authors = authors;
+            _context = context;
         }
 
-        public IEnumerable<Book> GetAll() => _data.Books;
-
-        public Book? GetById(int id) => _data.Books.FirstOrDefault(b => b.Id == id);
-
-        public Book Create(Book book)
+        public IEnumerable<Book> GetAll()
         {
-            if (!_authors.Exists(book.AuthorId))
-                throw new ArgumentException(ResourceHelper.Get("AuthorNotFound", book.AuthorId));
+            return _context.Books.AsNoTracking().ToList();
+        }
 
-            if (string.IsNullOrWhiteSpace(book.Title))
-                throw new ArgumentException(ResourceHelper.Get("InvalidBookTitle"));
+        public Book GetById(int id)
+        {
+            var book = _context.Books.FirstOrDefault(b => b.Id == id);
+            if (book == null)
+                throw new KeyNotFoundException(ResourceHelper.Get("BookNotFound", id));
 
-            book.Id = _data.GetNextBookId();
-            _data.Books.Add(book);
             return book;
         }
 
-        public bool Update(int id, Book book)
+        public Book Create(Book book)
         {
-            var existing = _data.Books.FirstOrDefault(b => b.Id == id);
-            if (existing == null) return false;
-            if (!_authors.Exists(book.AuthorId))
+            if (string.IsNullOrWhiteSpace(book.Title))
+                throw new ArgumentException(ResourceHelper.Get("InvalidBookTitle"));
+
+            if (!_context.Authors.Any(a => a.Id == book.AuthorId))
                 throw new ArgumentException(ResourceHelper.Get("AuthorNotFound", book.AuthorId));
+
+            _context.Books.Add(book);
+            _context.SaveChanges();
+
+            return book;
+        }
+
+        public void Update(int id, Book book)
+        {
+            var existing = _context.Books.Find(id);
+            if (existing == null)
+                throw new KeyNotFoundException(ResourceHelper.Get("BookNotFound", id));
 
             existing.Title = book.Title;
             existing.PublishedYear = book.PublishedYear;
             existing.AuthorId = book.AuthorId;
-            return true;
+
+            _context.SaveChanges();
         }
 
-        public bool Delete(int id)
+        public void Delete(int id)
         {
-            var book = _data.Books.FirstOrDefault(b => b.Id == id);
-            if (book == null) return false;
+            var book = _context.Books.Find(id);
+            if (book == null)
+                throw new KeyNotFoundException(ResourceHelper.Get("BookNotFound", id));
 
-            _data.Books.Remove(book);
-            return true;
+            _context.Books.Remove(book);
+            _context.SaveChanges();
+        }
+
+        public IEnumerable<object> GetAuthorsWithBookCount()
+        {
+            return _context.Authors
+                .Include(a => a.Books)
+                .Select(a => new
+                {
+                    a.Name,
+                    BooksCount = a.Books.Count
+                })
+                .ToList();
+        }
+
+        public IEnumerable<Book> GetBooksAfterYear(int year)
+        {
+            return _context.Books
+                .Where(b => b.PublishedYear != null && b.PublishedYear > year)
+                .ToList();
+        }
+
+        public IEnumerable<Author> FindAuthorsByName(string name)
+        {
+            return _context.Authors
+                .Include(a => a.Books)
+                .Where(a => a.Name.Contains(name))
+                .ToList();
         }
     }
 }

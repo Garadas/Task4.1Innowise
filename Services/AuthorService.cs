@@ -1,4 +1,7 @@
-﻿using quest5.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using quest5.Models;
+using quest5.Resources;
+using quest5.DataFolder;
 
 namespace quest5.Services
 {
@@ -11,34 +14,53 @@ namespace quest5.Services
             _data = data;
         }
 
-        public IEnumerable<Author> GetAll() => _data.Authors;
+        public IEnumerable<Author> GetAll()
+        {
+            return _data.Authors.Include(a => a.Books).AsNoTracking().ToList();
+        }
 
-        public Author? GetById(int id) => _data.Authors.FirstOrDefault(a => a.Id == id);
+        public Author GetById(int id)
+        {
+            var author = _data.Authors.Include(a => a.Books)
+                .FirstOrDefault(a => a.Id == id);
+
+            if (author == null)
+                throw new KeyNotFoundException(ResourceHelper.Get("AuthorNotFound", id));
+
+            return author;
+        }
 
         public Author Create(Author author)
         {
-            author.Id = _data.GetNextAuthorId();
+            if (string.IsNullOrWhiteSpace(author.Name))
+                throw new ArgumentException(ResourceHelper.Get("AuthorRequired"));
+
             _data.Authors.Add(author);
+            _data.SaveChanges();
+
             return author;
         }
 
         public bool Update(int id, Author author)
         {
-            var existing = _data.Authors.FirstOrDefault(a => a.Id == id);
-            if (existing == null) return false;
+            var existing = _data.Authors.Find(id);
+            if (existing == null)
+                throw new KeyNotFoundException(ResourceHelper.Get("AuthorNotFound", id));
 
             existing.Name = author.Name;
             existing.DateOfBirth = author.DateOfBirth;
+            _data.SaveChanges();
             return true;
         }
 
         public bool Delete(int id)
         {
-            var author = _data.Authors.FirstOrDefault(a => a.Id == id);
-            if (author == null) return false;
+            var author = _data.Authors.Include(a => a.Books).FirstOrDefault(a => a.Id == id);
+            if (author == null)
+                throw new KeyNotFoundException(ResourceHelper.Get("AuthorNotFound", id));
 
-            _data.Books.RemoveAll(b => b.AuthorId == id);
             _data.Authors.Remove(author);
+            _data.SaveChanges();
             return true;
         }
 

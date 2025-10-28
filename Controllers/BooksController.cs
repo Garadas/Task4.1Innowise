@@ -19,32 +19,47 @@ namespace quest5.Controllers
         public ActionResult<IEnumerable<Book>> GetAll() => Ok(_books.GetAll());
 
         [HttpGet("{id:int}")]
-        public ActionResult<Book> Get(int id)
-        {
-            var book = _books.GetById(id);
-            if (book == null) return NotFound();
-            return Ok(book);
-        }
+        public ActionResult<Book> Get(int id) => Ok(_books.GetById(id));
 
         [HttpPost]
         public ActionResult<Book> Create([FromBody] Book book)
         {
-                var created = _books.Create(book);
-                return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+            var created = _books.Create(book);
+            return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
         }
 
         [HttpPut("{id:int}")]
         public IActionResult Update(int id, [FromBody] Book book)
         {
-                if (!_books.Update(id, book)) return NotFound();
-                return NoContent();
+            _books.Update(id, book);
+            return NoContent();
         }
 
         [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
         {
-            if (!_books.Delete(id)) return NotFound();
+            _books.Delete(id);
             return NoContent();
+        }
+
+        // --- LINQ-запросы ---
+
+        [HttpGet("after/{year}")]
+        public IActionResult GetAfterYear(int year)
+        {
+            return Ok(_books.GetBooksAfterYear(year));
+        }
+
+        [HttpGet("authors-with-count")]
+        public IActionResult GetAuthorsWithCount()
+        {
+            return Ok(_books.GetAuthorsWithBookCount());
+        }
+
+        [HttpGet("find-author/{name}")]
+        public IActionResult FindAuthor(string name)
+        {
+            return Ok(_books.FindAuthorsByName(name));
         }
     }
 }

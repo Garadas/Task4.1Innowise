@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace quest5.Models
 {
@@ -13,7 +14,7 @@ namespace quest5.Models
         [Range(0, 3000)]
         public int? PublishedYear { get; set; }
 
-        [Required]
+        [ForeignKey("Author")]
         public int AuthorId { get; set; }
     }
 }
